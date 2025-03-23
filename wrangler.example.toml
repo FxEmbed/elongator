@@ -1,5 +1,6 @@
 name = "elongator"
 account_id = "[CLOUDFLARE_ACCOUNT_ID]"
+workers_dev = false
 main = "./dist/worker.js"
 compatibility_date = "2024-11-14"
 send_metrics = false
