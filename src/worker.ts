@@ -75,6 +75,14 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
     const statusId = request.url.match(/(?<=focalTweetId%22%3A%22)\d+(?=%)|(?<=tweetId=)\d+(?=,)/g)?.[0] ?? request.url;
 
+    // Print out x-rate-limit-remaining
+    const rateLimitRemaining = response.headers.get('x-rate-limit-remaining') ?? 'N/A';
+    console.log(`Rate limit remaining for account: ${rateLimitRemaining}`)
+    // Print rate limit reset converted to a human readable date
+    const rateLimitReset = response.headers.get('x-rate-limit-reset') ?? '0';
+    const rateLimitResetDate = new Date(Number(rateLimitReset) * 1000)
+    console.log(`Rate limit reset for account: ${rateLimitResetDate}`)
+
     try {
       attempts++;
       console.log(`Attempt #${attempts} with account ${username}`);
@@ -191,14 +199,6 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     statusText: response.statusText,
     headers: response.headers
   })
-
-  // Print out x-rate-limit-remaining
-  const rateLimitRemaining = response.headers.get('x-rate-limit-remaining')
-  console.log(`Rate limit remaining for account: ${rateLimitRemaining}`)
-  // Print rate limit reset converted to a human readable date
-  const rateLimitReset = response.headers.get('x-rate-limit-reset')
-  const rateLimitResetDate = new Date(Number(rateLimitReset) * 1000)
-  console.log(`Rate limit reset for account: ${rateLimitResetDate}`)
 
   return decodedResponse
 }
