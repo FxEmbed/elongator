@@ -9,12 +9,15 @@ type CredentialList = {
 }
 
 import _credentials from '../credentials.json';
+import { ClientTransaction } from './transaction/transaction'
 const credentials: CredentialList = _credentials;
+let sharedClientTransaction: Promise<ClientTransaction> | null = null;
 
 async function handleRequest(request: Request, env: any, ctx: ExecutionContext): Promise<Response> {
   // Extract the URL of the Twitter API endpoint from the incoming request
   const url = new URL(request.url)
   const apiUrl = `https://x.com${url.pathname}${url.search}`
+  const requestPath = new URL(url).pathname.split('?')[0];
 
   // Check if the API endpoint is on the allowlist
   if (!isAllowlisted(apiUrl)) {
@@ -23,6 +26,20 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
   // Clone the incoming request and modify its headers
   const headers = new Headers(request.headers)
+  
+  const startTime = performance.now();
+
+  if (!sharedClientTransaction) {
+    console.log('Creating new client transaction');
+    sharedClientTransaction = ClientTransaction.create()
+    .catch(err => {
+      sharedClientTransaction = null;  // reset so next request can retry
+      throw err;
+    });
+  }
+  const tx = await sharedClientTransaction;
+  const endTime = performance.now();
+  console.log(`Time taken to create client transaction: ${endTime - startTime}ms`);
 
   let existingCookies = request.headers.get('Cookie');
 
@@ -64,14 +81,23 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
     headers.set('Cookie', cookies);
     headers.delete('Accept-Encoding');
+    try {
+      const transactionId = await tx.generateTransactionId('GET', requestPath);
+      headers.set('x-client-transaction-id', transactionId);
+    } catch (e) {
+      console.log('Error generating transaction ID:', e);
+    }
 
     newRequestInit.headers = headers;
 
     const newRequest = new Request(apiUrl, newRequestInit);
     response = await fetch(newRequest);
 
+    const rawBody = textDecoder.decode(await response.arrayBuffer());
     // Read the response body to create a new response with string version of body
-    decodedBody = textDecoder.decode(await response.arrayBuffer()).match(/{.+}/)?.[0] || '{}';
+    decodedBody = rawBody.match(/{.+}/)?.[0] || '{}';
+
+    // console.log('response', rawBody);
 
     const statusId = request.url.match(/(?<=focalTweetId%22%3A%22)\d+(?=%)|(?<=tweetId=)\d+(?=,)/g)?.[0] ?? request.url;
 
@@ -85,7 +111,8 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
     try {
       attempts++;
-      console.log(`Attempt #${attempts} with account ${username}`);
+      console.log(`Attempt #${attempts} with account [REDACTED]`);
+      // console.log(`Attempt #${attempts} with account ${username}`);
       if (statusId.length < 20) {
         console.log(`Fetching status ID: ${statusId}`);
       }
@@ -173,7 +200,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
       }
 
       if (typeof json.data === 'undefined' && typeof json.translation === 'undefined') {
-        console.log(`No data was sent. Response code ${response.status}. Data sent`, JSON.stringify(json));
+        console.log(`No data was sent. Response code ${response.status}. Data sent`, rawBody ?? '[empty]');
         Object.keys(headers).forEach((key) => {
           console.log(key, headers.get(key));
         });
@@ -186,7 +213,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     }
     
     // if attempts over 5, return bad gateway
-    if (attempts > 3) {
+    if (attempts > 4) {
       console.log('Maximum failed attempts reached');
       return new Response('Maximum failed attempts reached', { status: 502 })
     }
@@ -213,6 +240,9 @@ function isAllowlisted(apiUrl: string): boolean {
     '/i/api/graphql/g-nnNwMkZpmrGbO2Pk0rag/TweetDetail',
     '/i/api/graphql/7xdlmKfKUJQP7D7woCL5CA/TweetDetail',
     '/i/api/graphql/QVo2zKMcLZjXABtcYpi0mA/TweetDetail',
+    '/i/api/graphql/_8aYOgEDz35BrBcBal1-_w/TweetDetail',
+    '/i/api/graphql/miKSMGb2R1SewIJv2-ablQ/TweetDetail',
+    '/graphql/_8aYOgEDz35BrBcBal1-_w/TweetDetail',
     '/i/api/graphql/sLVLhk0bGj3MVFEKTdax1w/UserByScreenName'
   ]
 
@@ -226,7 +256,7 @@ function isAllowlisted(apiUrl: string): boolean {
 function getRandomAccount(): Credentials {
   const randomIndex = Math.floor(Math.random() * credentials.accounts.length)
   const randomAccount = credentials.accounts[randomIndex]
-  console.log(`Using account ${randomAccount.username}`);
+  // console.log(`Using account ${randomAccount.username}`);
   return randomAccount
 }
 

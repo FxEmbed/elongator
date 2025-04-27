@@ -30,6 +30,9 @@
     "eslint-plugin-sonarjs": "^0.25.1",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2",
-    "wrangler": "^4.6.0"
+    "wrangler": "^4.13.0"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
   }
 }
