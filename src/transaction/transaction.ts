@@ -4,15 +4,29 @@ import { isOdd, interpolate, convertRotationToMatrix, floatToHex } from './utils
 
 // Cached fetch helper that uses Cloudflare Worker cache
 async function cachedFetch(input: RequestInfo, init?: RequestInit): Promise<Response> {
+  const startTime = performance.now();
   const request = new Request(input, init);
   const cache = caches.default;
   const cachedResponse = await cache.match(request);
   if (cachedResponse) {
+    const endTime = performance.now();
+    console.log(`Cache hit for ${input} in ${endTime - startTime}ms`);
     return cachedResponse.clone();
   }
   const response = await fetch(request);
   if (request.method === 'GET' && response.ok) {
-    await cache.put(request, response.clone());
+    const endTime = performance.now();
+    console.log(`Cache miss for ${input} in ${endTime - startTime}ms`);
+    const clonedResponse = response.clone();
+    // Allow it to be cached for 5 minutes
+    const cacheHeaders = new Headers();
+    cacheHeaders.set('cache-control', `public, max-age=300`);
+    const newResponse = new Response(clonedResponse.body, {
+      status: clonedResponse.status,
+      statusText: clonedResponse.statusText,
+      headers: cacheHeaders
+    });
+    await cache.put(request, newResponse);
   }
   return response;
 }

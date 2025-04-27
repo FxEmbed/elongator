@@ -26,7 +26,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
   // Clone the incoming request and modify its headers
   const headers = new Headers(request.headers)
-  
+
   const startTime = performance.now();
 
   if (!sharedClientTransaction) {
@@ -83,6 +83,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     headers.delete('Accept-Encoding');
     try {
       const transactionId = await tx.generateTransactionId('GET', requestPath);
+      console.log('Generated transaction ID:', transactionId);
       headers.set('x-client-transaction-id', transactionId);
     } catch (e) {
       console.log('Error generating transaction ID:', e);
@@ -212,8 +213,8 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
       errors = true;
     }
     
-    // if attempts over 5, return bad gateway
-    if (attempts > 4) {
+    // if attempts over 8, return bad gateway
+    if (attempts > 7) {
       console.log('Maximum failed attempts reached');
       return new Response('Maximum failed attempts reached', { status: 502 })
     }
@@ -226,6 +227,8 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     statusText: response.statusText,
     headers: response.headers
   })
+
+  console.log(`Got our response with code ${response.status}, we're done here!`)
 
   return decodedResponse
 }
