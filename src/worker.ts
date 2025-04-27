@@ -186,6 +186,11 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
                   inline: false
                 },
                 {
+                  name: 'Endpoint',
+                  value: (requestPath ?? '').match(/\w+$/g)?.[0] ?? 'idk',
+                  inline: true
+                },
+                {
                   name: "Status",
                   value: statusId,
                   inline: true
