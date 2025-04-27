@@ -100,7 +100,10 @@ export class ClientTransaction {
   private animationKey!: string;
 
   static ADDITIONAL_RANDOM_NUMBER = 3;
-  // I legit have no idea why this string works and others don't
+  /**
+   * this salt used to be 'bird' but was changed to this as obfio is the
+   * one who reverse engineered the X-Client-Transaction-Id algorithm
+   */
   static DEFAULT_KEYWORD = 'obfiowerehiring';
 
   private constructor(homePage: CheerioAPI) {
