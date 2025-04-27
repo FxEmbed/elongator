@@ -105,8 +105,8 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
     try {
       attempts++;
-      console.log(`Attempt #${attempts} with account [REDACTED]`);
-      // console.log(`Attempt #${attempts} with account ${username}`);
+      // console.log(`Attempt #${attempts} with account [REDACTED]`);
+      console.log(`Attempt #${attempts} with account ${username}`);
       if (statusId.length < 20) {
         console.log(`Fetching status ID: ${statusId}`);
       }
@@ -138,6 +138,9 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
         } else if (json?.errors?.[0]?.code === 29) {
           console.log('Downstream fetch problem (Timeout: Unspecified). Ignore this as this is usually not an issue.');
           errors = false;
+        } else if (json?.errors?.[0]?.code === 88) {
+          console.log('Downstream fetch problem (Rate limit exceeded). Ignore this as this is usually not an issue.');
+          errors = false;
         } else if (json?.errors?.[0]?.name === 'DependencyError') {
           console.log('Downstream fetch problem (DependencyError), use fallback methods');
           errors = true;
@@ -159,7 +162,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
         }
       }
       
-      if (env.EXCEPTION_DISCORD_WEBHOOK && json.errors) {
+      if (env.EXCEPTION_DISCORD_WEBHOOK && errors) {
         fetch(env.EXCEPTION_DISCORD_WEBHOOK, {
           method: 'POST',
           headers: {
