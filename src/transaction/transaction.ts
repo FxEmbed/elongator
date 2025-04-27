@@ -5,7 +5,7 @@ import { isOdd, interpolate, convertRotationToMatrix, floatToHex } from './utils
 // Cached fetch helper that uses Cloudflare Worker cache
 async function cachedFetch(input: RequestInfo, init?: RequestInit, fetchNew = false): Promise<Response> {
   const startTime = performance.now();
-  const request = new Request(input, init);
+  const request = new Request(fetchNew ? input + `?${Math.random()}` : input, init);
   const cache = caches.default;
   if (!fetchNew) {
     const cachedResponse = await cache.match(request);
@@ -28,7 +28,8 @@ async function cachedFetch(input: RequestInfo, init?: RequestInit, fetchNew = fa
       statusText: clonedResponse.statusText,
       headers: cacheHeaders
     });
-    await cache.put(request, newResponse);
+    const cacheRequest = new Request(input, init);
+    await cache.put(cacheRequest, newResponse);
   }
   return response;
 }
@@ -37,7 +38,7 @@ async function cachedFetch(input: RequestInfo, init?: RequestInit, fetchNew = fa
  * Handle X.com migration (refresh meta and form-based redirect)
  */
 export async function handleXMigration(fetchNewHomePage = false): Promise<CheerioAPI> {
-  const homeUrl = 'https://x.com' + (fetchNewHomePage ? `/?${Math.random()}` : '');
+  const homeUrl = 'https://x.com';
   let resp = await cachedFetch(homeUrl, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'

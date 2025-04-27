@@ -66,8 +66,9 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
     headers.set('Cookie', cookies);
     headers.delete('Accept-Encoding');
+    
     try {
-      const transaction = await ClientTransaction.create(attempts > 2)
+      const transaction = await ClientTransaction.create(attempts > 1)
       .catch(err => {
         throw err;
       });
