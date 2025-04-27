@@ -3,15 +3,17 @@ import { Cubic } from './cubic';
 import { isOdd, interpolate, convertRotationToMatrix, floatToHex } from './utils';
 
 // Cached fetch helper that uses Cloudflare Worker cache
-async function cachedFetch(input: RequestInfo, init?: RequestInit): Promise<Response> {
+async function cachedFetch(input: RequestInfo, init?: RequestInit, fetchNew = false): Promise<Response> {
   const startTime = performance.now();
   const request = new Request(input, init);
   const cache = caches.default;
-  const cachedResponse = await cache.match(request);
-  if (cachedResponse) {
-    const endTime = performance.now();
-    console.log(`Cache hit for ${input} in ${endTime - startTime}ms`);
-    return cachedResponse.clone();
+  if (!fetchNew) {
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) {
+      const endTime = performance.now();
+      console.log(`Cache hit for ${input} in ${endTime - startTime}ms`);
+      return cachedResponse.clone();
+    }
   }
   const response = await fetch(request);
   if (request.method === 'GET' && response.ok) {
@@ -34,13 +36,13 @@ async function cachedFetch(input: RequestInfo, init?: RequestInit): Promise<Resp
 /**
  * Handle X.com migration (refresh meta and form-based redirect)
  */
-export async function handleXMigration(): Promise<CheerioAPI> {
-  const homeUrl = 'https://x.com';
+export async function handleXMigration(fetchNewHomePage = false): Promise<CheerioAPI> {
+  const homeUrl = 'https://x.com' + (fetchNewHomePage ? `/?${Math.random()}` : '');
   let resp = await cachedFetch(homeUrl, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'
     }
-  });
+  }, fetchNewHomePage);
   let html = await resp.text();
   let $ = load(html);
 
@@ -113,8 +115,8 @@ export class ClientTransaction {
   /**
    * Factory method to init class (handles migration + precomputations)
    */
-  static async create(): Promise<ClientTransaction> {
-    const page = await handleXMigration();
+  static async create(fetchNewHomePage = false): Promise<ClientTransaction> {
+    const page = await handleXMigration(fetchNewHomePage);
     const tx = new ClientTransaction(page);
     await tx.init();
     return tx;

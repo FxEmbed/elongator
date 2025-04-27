@@ -26,11 +26,6 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
   // Clone the incoming request and modify its headers
   const headers = new Headers(request.headers)
 
-  const transaction = await ClientTransaction.create()
-  .catch(err => {
-    throw err;
-  });
-
   let existingCookies = request.headers.get('Cookie');
 
   // Create a new request with the modified properties
@@ -72,6 +67,10 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     headers.set('Cookie', cookies);
     headers.delete('Accept-Encoding');
     try {
+      const transaction = await ClientTransaction.create(attempts > 2)
+      .catch(err => {
+        throw err;
+      });
       const transactionId = await transaction.generateTransactionId('GET', requestPath);
       console.log('Generated transaction ID:', transactionId);
       headers.set('x-client-transaction-id', transactionId);
