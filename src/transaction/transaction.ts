@@ -146,6 +146,7 @@ export class ClientTransaction {
     if (indices.length < 2) {
       throw new Error("Couldn't get KEY_BYTE indices");
     }
+    console.log(`Indices: ${indices}`);
     return [indices[0], indices.slice(1)];
   }
 
@@ -156,6 +157,7 @@ export class ClientTransaction {
     if (!content) {
       throw new Error("Couldn't get key from the page source");
     }
+    console.log(`Key: ${content}`);
     return content;
   }
 

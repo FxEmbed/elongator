@@ -11,7 +11,6 @@ type CredentialList = {
 import _credentials from '../credentials.json';
 import { ClientTransaction } from './transaction/transaction'
 const credentials: CredentialList = _credentials;
-let sharedClientTransaction: Promise<ClientTransaction> | null = null;
 
 async function handleRequest(request: Request, env: any, ctx: ExecutionContext): Promise<Response> {
   // Extract the URL of the Twitter API endpoint from the incoming request
@@ -27,19 +26,10 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
   // Clone the incoming request and modify its headers
   const headers = new Headers(request.headers)
 
-  const startTime = performance.now();
-
-  if (!sharedClientTransaction) {
-    console.log('Creating new client transaction');
-    sharedClientTransaction = ClientTransaction.create()
-    .catch(err => {
-      sharedClientTransaction = null;  // reset so next request can retry
-      throw err;
-    });
-  }
-  const tx = await sharedClientTransaction;
-  const endTime = performance.now();
-  console.log(`Time taken to create client transaction: ${endTime - startTime}ms`);
+  const transaction = await ClientTransaction.create()
+  .catch(err => {
+    throw err;
+  });
 
   let existingCookies = request.headers.get('Cookie');
 
@@ -82,7 +72,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     headers.set('Cookie', cookies);
     headers.delete('Accept-Encoding');
     try {
-      const transactionId = await tx.generateTransactionId('GET', requestPath);
+      const transactionId = await transaction.generateTransactionId('GET', requestPath);
       console.log('Generated transaction ID:', transactionId);
       headers.set('x-client-transaction-id', transactionId);
     } catch (e) {
@@ -92,7 +82,10 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     newRequestInit.headers = headers;
 
     const newRequest = new Request(apiUrl, newRequestInit);
+    const startTime = performance.now();
     response = await fetch(newRequest);
+    const endTime = performance.now();
+    console.log(`Fetch completed in ${endTime - startTime}ms`);
 
     const rawBody = textDecoder.decode(await response.arrayBuffer());
     // Read the response body to create a new response with string version of body
@@ -213,8 +206,8 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
       errors = true;
     }
     
-    // if attempts over 8, return bad gateway
-    if (attempts > 7) {
+    // if attempts over 5, return bad gateway
+    if (attempts > 4) {
       console.log('Maximum failed attempts reached');
       return new Response('Maximum failed attempts reached', { status: 502 })
     }
