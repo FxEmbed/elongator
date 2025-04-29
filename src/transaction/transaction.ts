@@ -131,6 +131,7 @@ export class ClientTransaction {
     this.key = this.getKey();
     this.keyBytes = this.getKeyBytes(this.key);
     this.animationKey = this.getAnimationKey();
+    console.log('Animation key:', this.animationKey);
   }
 
   /** Fetch and parse the ondemand JS to get key byte indices */

@@ -66,7 +66,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
     headers.set('Cookie', cookies);
     headers.delete('Accept-Encoding');
-    
+
     try {
       const transaction = await ClientTransaction.create(attempts > 1)
       .catch(err => {
@@ -105,8 +105,9 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
     try {
       attempts++;
-      // console.log(`Attempt #${attempts} with account [REDACTED]`);
-      console.log(`Attempt #${attempts} with account ${username}`);
+      console.log('---------------------------------------------')
+      console.log(`Attempt #${attempts} with account [REDACTED]`);
+      // console.log(`Attempt #${attempts} with account ${username}`);
       if (statusId.length < 20) {
         console.log(`Fetching status ID: ${statusId}`);
       }
@@ -241,13 +242,19 @@ function isAllowlisted(apiUrl: string): boolean {
     '/i/api/graphql/2ICDjqPd81tulZcYrtpTuQ/TweetResultByRestId',
     '/i/api/graphql/mbnjGF4gOwo5gyp9pe5s4A/TweetResultByRestId',
     '/i/api/graphql/Xl5pC_lBk_gcO2ItU39DQw/TweetResultByRestId',
+    '/i/api/graphql/zAz9764BcLZOJ0JU2wrd1A/TweetResultByRestId',
+    '/i/api/graphql/XM66WIszpd1XC97myrIS0w/TweetResultsByRestIds',
     '/i/api/graphql/g-nnNwMkZpmrGbO2Pk0rag/TweetDetail',
     '/i/api/graphql/7xdlmKfKUJQP7D7woCL5CA/TweetDetail',
     '/i/api/graphql/QVo2zKMcLZjXABtcYpi0mA/TweetDetail',
     '/i/api/graphql/_8aYOgEDz35BrBcBal1-_w/TweetDetail',
     '/i/api/graphql/miKSMGb2R1SewIJv2-ablQ/TweetDetail',
+    '/i/api/graphql/FwLfaByYlUhvhcLp3nWINQ/TweetResultByIdQuery',
+    '/graphql/FwLfaByYlUhvhcLp3nWINQ/TweetResultByIdQuery',
+    '/i/api/graphql/vA1jTXbYyuy1QXGa0Xw8hA/TweetResultsByIdsQuery',
     '/graphql/_8aYOgEDz35BrBcBal1-_w/TweetDetail',
-    '/i/api/graphql/sLVLhk0bGj3MVFEKTdax1w/UserByScreenName'
+    '/i/api/graphql/sLVLhk0bGj3MVFEKTdax1w/UserByScreenName',
+    '/i/api/graphql/1VOOyvKkiI3FMmkeDNxM9A/UserByScreenName'
   ]
 
   const endpointPath = new URL(apiUrl).pathname
