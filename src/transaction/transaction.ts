@@ -117,6 +117,9 @@ export class ClientTransaction {
    * Factory method to init class (handles migration + precomputations)
    */
   static async create(fetchNewHomePage = false): Promise<ClientTransaction> {
+    if (fetchNewHomePage) {
+      console.log(`Let's try fetching the home page again`)
+    }
     const page = await handleXMigration(fetchNewHomePage);
     const tx = new ClientTransaction(page);
     await tx.init();
@@ -222,7 +225,7 @@ export class ClientTransaction {
     const curves = frames.slice(7).map((v, i) => this.solve(v, isOdd(i), 1, false));
     const cubic = new Cubic(curves);
     const f = cubic.getValue(targetTime);
-    const color = interpolate(fromColor, toColor, f).map(v => (v>0 ? v : 0));
+    const color = interpolate(fromColor, toColor, f).map(v => Math.max(0, Math.min(255, v)));
     const rot = interpolate([0], toRot, f);
     const matrix = convertRotationToMatrix(rot[0]);
 
@@ -251,9 +254,10 @@ export class ClientTransaction {
   private getAnimationKey(): string {
     const total = 4096;
     const rowIndex = this.keyBytes[this.defaultRowIndex] % 16;
-    const frameTime = this.defaultKeyBytesIndices
+    let frameTime = this.defaultKeyBytesIndices
       .map(i => this.keyBytes[i] % 16)
       .reduce((a,b) => a*b, 1);
+    frameTime = Math.round(frameTime / 10) * 10;
     const grid = this.get2dArray();
     const row = grid[rowIndex];
     const t = frameTime / total;
