@@ -236,31 +236,30 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 }
 
 function isAllowlisted(apiUrl: string): boolean {
-  const allowlist: string[] = [
+  const url = new URL(apiUrl)
+  const allowlistPath: string[] = [
     '/i/api/1.1/strato/column/None/tweetId',
-    '/1.1/live_video_stream/status/',
-    '/i/api/graphql/2ICDjqPd81tulZcYrtpTuQ/TweetResultByRestId',
-    '/i/api/graphql/mbnjGF4gOwo5gyp9pe5s4A/TweetResultByRestId',
-    '/i/api/graphql/Xl5pC_lBk_gcO2ItU39DQw/TweetResultByRestId',
-    '/i/api/graphql/zAz9764BcLZOJ0JU2wrd1A/TweetResultByRestId',
-    '/i/api/graphql/XM66WIszpd1XC97myrIS0w/TweetResultsByRestIds',
-    '/i/api/graphql/g-nnNwMkZpmrGbO2Pk0rag/TweetDetail',
-    '/i/api/graphql/7xdlmKfKUJQP7D7woCL5CA/TweetDetail',
-    '/i/api/graphql/QVo2zKMcLZjXABtcYpi0mA/TweetDetail',
-    '/i/api/graphql/_8aYOgEDz35BrBcBal1-_w/TweetDetail',
-    '/i/api/graphql/miKSMGb2R1SewIJv2-ablQ/TweetDetail',
-    '/i/api/graphql/FwLfaByYlUhvhcLp3nWINQ/TweetResultByIdQuery',
-    '/graphql/FwLfaByYlUhvhcLp3nWINQ/TweetResultByIdQuery',
-    '/i/api/graphql/vA1jTXbYyuy1QXGa0Xw8hA/TweetResultsByIdsQuery',
-    '/graphql/_8aYOgEDz35BrBcBal1-_w/TweetDetail',
-    '/i/api/graphql/sLVLhk0bGj3MVFEKTdax1w/UserByScreenName',
-    '/i/api/graphql/1VOOyvKkiI3FMmkeDNxM9A/UserByScreenName'
+    '/1.1/live_video_stream/status/'
   ]
+  const allowlistQuery: string[] = [
+    'TweetResultByRestId',
+    'TweetResultsByRestIds',
+    'TweetResultByIdQuery',
+    'TweetResultsByIdsQuery',
+    'TweetDetail',
+    'UserByScreenName'
+  ]
+
+  if (apiUrl.includes('graphql')) {
+    const query = url.pathname.split('/').pop()
+    console.log('query', query)
+    return allowlistQuery.some(endpoint => endpoint === query)
+  }
 
   const endpointPath = new URL(apiUrl).pathname
 
   console.log('endpointPath',endpointPath)
-  return allowlist.some(endpoint => endpointPath.startsWith(endpoint))
+  return allowlistPath.some(endpoint => endpointPath.startsWith(endpoint))
 }
 
 
