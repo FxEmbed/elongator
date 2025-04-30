@@ -11,6 +11,7 @@ type CredentialList = {
 import _credentials from '../credentials.json';
 import { ClientTransaction } from './transaction/transaction'
 const credentials: CredentialList = _credentials;
+const redactUsername = false;
 
 async function handleRequest(request: Request, env: any, ctx: ExecutionContext): Promise<Response> {
   // Extract the URL of the Twitter API endpoint from the incoming request
@@ -106,8 +107,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     try {
       attempts++;
       console.log('---------------------------------------------')
-      console.log(`Attempt #${attempts} with account [REDACTED]`);
-      // console.log(`Attempt #${attempts} with account ${username}`);
+      console.log(`Attempt #${attempts} with account ${redactUsername ? '[REDACTED]' : username}`);
       if (statusId.length < 20) {
         console.log(`Fetching status ID: ${statusId}`);
       }
