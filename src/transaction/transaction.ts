@@ -38,7 +38,7 @@ async function cachedFetch(input: RequestInfo, init?: RequestInit, fetchNew = fa
  * Handle X.com migration (refresh meta and form-based redirect)
  */
 export async function handleXMigration(fetchNewHomePage = false): Promise<CheerioAPI> {
-  const homeUrl = 'https://x.com';
+  const homeUrl = 'https://x.com/home';
   let resp = await cachedFetch(homeUrl, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'
@@ -141,10 +141,11 @@ export class ClientTransaction {
   private async getIndices(): Promise<[number, number[]]> {
     const html = this.homePage.html() || '';
     const m = ON_DEMAND_FILE_REGEX.exec(html);
+    const fallbackHash = 'de6339a'
     if (!m || !m[1]) {
-      throw new Error("Couldn't get on-demand file hash");
+      console.error("Couldn't get on-demand file hash");
     }
-    const hash = m[1];
+    const hash = m?.[1] ?? fallbackHash;
     const url = `https://abs.twimg.com/responsive-web/client-web/ondemand.s.${hash}a.js`;
     const resp = await cachedFetch(url);
     const text = await resp.text();

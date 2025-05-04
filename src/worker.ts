@@ -27,6 +27,8 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
   // Clone the incoming request and modify its headers
   const headers = new Headers(request.headers)
 
+  headers.delete('x-guest-token')
+
   let existingCookies = request.headers.get('Cookie');
 
   // Create a new request with the modified properties
@@ -68,19 +70,25 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     headers.set('Cookie', cookies);
     headers.delete('Accept-Encoding');
 
-    try {
-      const transaction = await ClientTransaction.create(attempts > 1)
-      .catch(err => {
-        throw err;
-      });
-      const transactionId = await transaction.generateTransactionId('GET', requestPath);
-      console.log('Generated transaction ID:', transactionId);
-      headers.set('x-client-transaction-id', transactionId);
-    } catch (e) {
-      console.log('Error generating transaction ID:', e);
+    if (needsTransactionId(apiUrl)) {
+      try {
+        const transaction = await ClientTransaction.create(attempts > 1)
+        .catch(err => {
+          throw err;
+        });
+        const transactionId = await transaction.generateTransactionId('GET', requestPath);
+        console.log('Generated transaction ID:', transactionId);
+        headers.set('x-client-transaction-id', transactionId);
+      } catch (e) {
+        console.log('Error generating transaction ID:', e);
+      }
     }
 
     newRequestInit.headers = headers;
+
+    // headers.forEach((value, key) => {
+      // console.log(`${key}: ${value}`);
+    // });
 
     const newRequest = new Request(apiUrl, newRequestInit);
     const startTime = performance.now();
@@ -252,7 +260,6 @@ function isAllowlisted(apiUrl: string): boolean {
 
   if (apiUrl.includes('graphql')) {
     const query = url.pathname.split('/').pop()
-    console.log('query', query)
     return allowlistQuery.some(endpoint => endpoint === query)
   }
 
@@ -260,6 +267,20 @@ function isAllowlisted(apiUrl: string): boolean {
 
   console.log('endpointPath',endpointPath)
   return allowlistPath.some(endpoint => endpointPath.startsWith(endpoint))
+}
+
+function needsTransactionId(apiUrl: string): boolean {
+  const url = new URL(apiUrl)
+  const queries: string[] = [
+    'TweetDetail'
+  ]
+
+  if (apiUrl.includes('graphql')) {
+    const query = url.pathname.split('/').pop()
+    return queries.some(endpoint => endpoint === query)
+  }
+
+  return false
 }
 
 
