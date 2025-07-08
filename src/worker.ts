@@ -151,9 +151,8 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
           console.log('Downstream fetch problem (Rate limit exceeded). Ignore this as this is usually not an issue.');
           errors = false;
         } else if (json?.errors?.[0]?.name === 'DependencyError') {
-          console.log('Downstream fetch problem (DependencyError), use fallback methods');
-          errors = true;
-          return new Response('Downstream fetch problem (DependencyError), use fallback methods', { status: 502 })
+          console.log('Downstream fetch problem (DependencyError). Ignore this as this is usually not an issue.');
+          errors = false;
         } else if (json?.errors?.[0]?.message === 'ServiceUnavailable: Unspecified') {
           console.log('Downstream fetch problem (ServiceUnavailable), use fallback methods');
           errors = true;
@@ -167,6 +166,9 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
           errors = false;
         } else if (json?.errors?.[0]?.message.includes('Denied by access control: Missing LdapGroup')) {
           console.log('Downstream fetch problem (Authorization: Denied by access control: Missing LdapGroup). Ignore this as this is usually not an issue.');
+          errors = false;
+        } else if (json?.errors?.[0]?.message.includes('Query: Unspecified')) {
+          console.log('Downstream fetch problem (Query: Unspecified). Ignore this as this is usually not an issue.');
           errors = false;
         }
       }
