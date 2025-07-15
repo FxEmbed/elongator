@@ -16,7 +16,7 @@ const redactUsername = false;
 async function handleRequest(request: Request, env: any, ctx: ExecutionContext): Promise<Response> {
   // Extract the URL of the Twitter API endpoint from the incoming request
   const url = new URL(request.url)
-  const apiUrl = `https://x.com${url.pathname}${url.search}`
+  const apiUrl = `https://api.x.com${url.pathname}${url.search}`
   const requestPath = new URL(url).pathname.split('?')[0];
 
   // Check if the API endpoint is on the allowlist
@@ -86,15 +86,15 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
     newRequestInit.headers = headers;
 
-    // headers.forEach((value, key) => {
-      // console.log(`${key}: ${value}`);
-    // });
-
     const newRequest = new Request(apiUrl, newRequestInit);
     const startTime = performance.now();
     response = await fetch(newRequest);
     const endTime = performance.now();
     console.log(`Fetch completed in ${endTime - startTime}ms`);
+
+    response.headers.forEach((value, key) => {
+      console.log(`${key}: ${value}`);
+    });
 
     const rawBody = textDecoder.decode(await response.arrayBuffer());
     // Read the response body to create a new response with string version of body
