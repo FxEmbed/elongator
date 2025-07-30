@@ -233,7 +233,9 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
       console.log('Error parsing JSON:', e);
       errors = true;
     }
-    console.log(`Account is not working, trying another one...`);
+    if (errors) {
+      console.log(`Account is not working, trying another one...`);
+    }
     
     // if attempts over 5, return bad gateway
     if (attempts > 4) {
@@ -268,7 +270,8 @@ function isAllowlisted(apiUrl: string): boolean {
     'TweetResultsByIdsQuery',
     'TweetDetail',
     'UserByScreenName',
-    'UserResultByScreenNameQuery'
+    'UserResultByScreenNameQuery',
+    'UserResultByScreenName',
   ]
 
   if (apiUrl.includes('graphql')) {
