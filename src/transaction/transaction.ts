@@ -6,8 +6,9 @@ import { isOdd, interpolate, convertRotationToMatrix, floatToHex } from './utils
 async function cachedFetch(input: RequestInfo, init?: RequestInit, fetchNew = false): Promise<Response> {
   const startTime = performance.now();
   const request = new Request(fetchNew ? input + `?${Math.random()}` : input, init);
-  const cache = caches.default;
-  if (!fetchNew) {
+  // @ts-ignore Not available when run from change country tool
+  const cache = globalThis.caches?.default;
+  if (!fetchNew && cache) {
     const cachedResponse = await cache.match(request);
     if (cachedResponse) {
       const endTime = performance.now();
@@ -29,7 +30,9 @@ async function cachedFetch(input: RequestInfo, init?: RequestInit, fetchNew = fa
       headers: cacheHeaders
     });
     const cacheRequest = new Request(input, init);
-    await cache.put(cacheRequest, newResponse);
+    if (cache) {
+      await cache.put(cacheRequest, newResponse);
+    }
   }
   return response;
 }
