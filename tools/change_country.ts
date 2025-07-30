@@ -8,6 +8,32 @@ import fs from "fs";
 import delay from "delay";
 import { ClientTransaction } from "../src/transaction/transaction";
 
+const forbiddenCountries = [
+  'at','be','bg','hr','cy','cz','dk','ee','fi','fr','de','gr','hu','ie',
+  'it','lv','lt','lu','mt','nl','pl','pt','ro','sk','si','es','se',
+  'is','li','no', 'gb'
+]
+
+const replacementCountries = [
+  'ca', 'us'
+]
+
+const baseHeaders =  {
+  accept: "*/*",
+  "accept-language": "en",
+  authorization: "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+  "sec-ch-ua": "\"Chromium\";v=\"138\", \"Not)A;Brand\";v=\"24\", \"Google Chrome\";v=\"138\"",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "x-twitter-active-user": "yes",
+  "x-twitter-auth-type": "OAuth2Session",
+  "x-twitter-client-language": "en",
+}
+
 async function setCountry(account, transactionId, country) {
   const params = new URLSearchParams({
     country_code: country
@@ -16,24 +42,13 @@ async function setCountry(account, transactionId, country) {
     "https://api.x.com/1.1/account/settings.json",
     {
       headers: {
-        accept: "*/*",
-        "accept-language": "en",
-        authorization: "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+        ...baseHeaders,
         "content-type": "application/x-www-form-urlencoded",
-        "sec-ch-ua": "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Google Chrome\";v=\"116\"",
         cookie: `auth_token=${account.authToken}; ct0=${account.csrfToken}`,
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
         "x-csrf-token": account.csrfToken,
-        "x-twitter-active-user": "yes",
-        "x-twitter-auth-type": "OAuth2Session",
-        "x-twitter-client-language": "en",
         "x-client-transaction-id": transactionId
       },
-      referrer: "https://x.com/jack/status/20",
+      referrer: "https://x.com/settings/your_twitter_data/account",
       referrerPolicy: "strict-origin-when-cross-origin",
       body: params,
       method: "POST",
@@ -55,24 +70,13 @@ async function getSettings(account, transactionId) {
     "https://api.x.com/1.1/account/settings.json",
     {
       headers: {
-        accept: "*/*",
-        "accept-language": "en",
-        authorization: "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+        ...baseHeaders,
         "content-type": "application/json",
-        "sec-ch-ua": "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Google Chrome\";v=\"116\"",
         cookie: `auth_token=${account.authToken}; ct0=${account.csrfToken}`,
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
         "x-csrf-token": account.csrfToken,
-        "x-twitter-active-user": "yes",
-        "x-twitter-auth-type": "OAuth2Session",
-        "x-twitter-client-language": "en",
         "x-client-transaction-id": transactionId
       },
-      referrer: "https://x.com/jack/status/20",
+      referrer: "https://x.com/settings/your_twitter_data/account",
       referrerPolicy: "strict-origin-when-cross-origin",
       body: null,
       method: "GET",
@@ -87,16 +91,6 @@ async function getSettings(account, transactionId) {
   
   return await response.json();
 }
-
-const forbiddenCountries = [
-  'at','be','bg','hr','cy','cz','dk','ee','fi','fr','de','gr','hu','ie',
-  'it','lv','lt','lu','mt','nl','pl','pt','ro','sk','si','es','se',
-  'is','li','no', 'gb'
-]
-
-const replacementCountries = [
-  'ca', 'us'
-]
 
 async function main() {
   let clientTransaction;
