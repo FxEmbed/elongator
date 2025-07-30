@@ -93,7 +93,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     console.log(`Fetch completed in ${endTime - startTime}ms`);
 
     response.headers.forEach((value, key) => {
-      console.log(`${key}: ${value}`);
+      // console.log(`${key}: ${value}`);
     });
 
     const rawBody = textDecoder.decode(await response.arrayBuffer());
@@ -120,12 +120,18 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
         console.log(`Fetching status ID: ${statusId}`);
       }
       json = JSON.parse(decodedBody);
-      if (json.errors) {
+      if (json.errors || decodedBody.includes(`"reason":"NsfwViewerIsUnderage"`)) {
         console.log(json.errors);
-        console.log(`Account is not working, trying another one...`);
         errors = true;
 
-        if (response.status === 404) {
+        if (decodedBody.includes(`"reason":"NsfwViewerIsUnderage"`)) {
+          console.log('NsfwViewerIsUnderage: Account country may be set to UK or EU');
+          errors = true;
+          json.errors = [{
+            message: 'Account country set to UK or EU and tried to access NSFW content',
+            code: 403
+          }]
+        } else if (response.status === 404) {
           console.log('Status not found');
           errors = false;
           return new Response('Status not found', { status: 404 })
@@ -172,50 +178,53 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
           errors = false;
         }
       }
-      
       if (env.EXCEPTION_DISCORD_WEBHOOK && errors) {
-        fetch(env.EXCEPTION_DISCORD_WEBHOOK, {
+        console.log('Sending Discord webhook');
+        const body: any = JSON.stringify({
+          content: `@everyone`,
+          embeds: [{
+            title: "Elongator Account Error",
+            description: "If this account is locked, please unlock it ASAP",
+            color: 0xFF0000, // Red color
+            fields: [
+              {
+                name: "Account",
+                value: username,
+                inline: true
+              },
+              {
+                name: "Errors",
+                value: "```json\n" + JSON.stringify(json.errors, null, 2) + "\n```",
+                inline: false
+              },
+              {
+                name: 'Endpoint',
+                value: (requestPath ?? '').match(/\w+$/g)?.[0] ?? 'idk',
+                inline: true
+              },
+              {
+                name: "Status",
+                value: statusId.length > 20 ? '[REDACTED]' : statusId,
+                inline: true
+              }
+            ]
+          }]
+        })
+        console.log('body', body);
+        const discordResponse = await fetch(env.EXCEPTION_DISCORD_WEBHOOK, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            content: `@everyone`,
-            embeds: [{
-              title: "Elongator Account Error",
-              description: "If this account is locked, please unlock it ASAP",
-              color: 0xFF0000, // Red color
-              fields: [
-                {
-                  name: "Account",
-                  value: username,
-                  inline: true
-                },
-                {
-                  name: "Errors",
-                  value: "```json\n" + JSON.stringify(json.errors, null, 2) + "\n```",
-                  inline: false
-                },
-                {
-                  name: 'Endpoint',
-                  value: (requestPath ?? '').match(/\w+$/g)?.[0] ?? 'idk',
-                  inline: true
-                },
-                {
-                  name: "Status",
-                  value: statusId,
-                  inline: true
-                }
-              ]
-            }]
-          })
+          body: body
         }).catch(err => console.error('Failed to send Discord webhook:', err));
+        console.log('discordResponse', await discordResponse?.text());
       }
 
       if (typeof json.data === 'undefined' && typeof json.translation === 'undefined') {
         console.log(`No data was sent. Response code ${response.status}. Data sent`, rawBody ?? '[empty]');
         Object.keys(headers).forEach((key) => {
-          console.log(key, headers.get(key));
+          // console.log(key, headers.get(key));
         });
 
         errors = true;
@@ -224,6 +233,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
       console.log('Error parsing JSON:', e);
       errors = true;
     }
+    console.log(`Account is not working, trying another one...`);
     
     // if attempts over 5, return bad gateway
     if (attempts > 4) {
@@ -257,7 +267,8 @@ function isAllowlisted(apiUrl: string): boolean {
     'TweetResultByIdQuery',
     'TweetResultsByIdsQuery',
     'TweetDetail',
-    'UserByScreenName'
+    'UserByScreenName',
+    'UserResultByScreenNameQuery'
   ]
 
   if (apiUrl.includes('graphql')) {
