@@ -221,7 +221,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
         console.log('discordResponse', await discordResponse?.text());
       }
 
-      if (typeof json.data === 'undefined' && typeof json.translation === 'undefined') {
+      if (typeof json.data === 'undefined' && typeof json.translation === 'undefined' && typeof json.result?.text === 'undefined') {
         console.log(`No data was sent. Response code ${response.status}. Data sent`, rawBody ?? '[empty]');
         Object.keys(headers).forEach((key) => {
           // console.log(key, headers.get(key));
