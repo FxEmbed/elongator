@@ -261,7 +261,8 @@ function isAllowlisted(apiUrl: string): boolean {
   const url = new URL(apiUrl)
   const allowlistPath: string[] = [
     '/i/api/1.1/strato/column/None/tweetId',
-    '/1.1/live_video_stream/status/'
+    '/1.1/live_video_stream/status/',
+    '/2/grok/translation.json',
   ]
   const allowlistQuery: string[] = [
     'TweetResultByRestId',
