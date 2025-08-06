@@ -236,6 +236,10 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     if (errors) {
       console.log(`Account is not working, trying another one...`);
     }
+    // Workaround for tokenized translations
+    if (apiUrl.includes('translation.json')) {
+      decodedBody = rawBody;
+    }
     
     // if attempts over 5, return bad gateway
     if (attempts > 4) {
@@ -243,7 +247,6 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
       return new Response('Maximum failed attempts reached', { status: 502 })
     }
   } while (errors);
- 
 
   // Create a new Response object with the decoded body
   const decodedResponse = new Response(decodedBody, {
