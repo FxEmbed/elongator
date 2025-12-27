@@ -98,7 +98,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
     const rawBody = textDecoder.decode(await response.arrayBuffer());
     // Read the response body to create a new response with string version of body
-    decodedBody = rawBody.match(/{.+}/)?.[0] || '{}';
+    decodedBody = rawBody.match(/\{[\s\S]+\}/mg)?.[0] || '{}';
 
     // console.log('response', rawBody);
 
@@ -158,6 +158,9 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
           errors = false;
         } else if (json?.errors?.[0]?.name === 'DependencyError') {
           console.log('Downstream fetch problem (DependencyError). Ignore this as this is usually not an issue.');
+          errors = false;
+        }  else if (json?.errors?.[0]?.kind === 'NonFatal') {
+          console.log('Non-Fatal Error reported by server, continuing...');
           errors = false;
         } else if (json?.errors?.[0]?.message === 'ServiceUnavailable: Unspecified') {
           console.log('Downstream fetch problem (ServiceUnavailable), use fallback methods');
@@ -221,7 +224,8 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
         console.log('discordResponse', await discordResponse?.text());
       }
 
-      if (typeof json.data === 'undefined' && typeof json.translation === 'undefined' && typeof json.result?.text === 'undefined') {
+
+      if (typeof json.data === 'undefined' && typeof json.translation === 'undefined' && typeof json.source === 'undefined' && typeof json.result?.text === 'undefined') {
         console.log(`No data was sent. Response code ${response.status}. Data sent`, rawBody ?? '[empty]');
         Object.keys(headers).forEach((key) => {
           // console.log(key, headers.get(key));
@@ -237,7 +241,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
       console.log(`Account is not working, trying another one...`);
     }
     // Workaround for tokenized translations
-    if (apiUrl.includes('translation.json')) {
+    if (apiUrl.includes('translation.json') || apiUrl.includes('live_video_stream')) {
       decodedBody = rawBody;
     }
     
@@ -276,6 +280,7 @@ function isAllowlisted(apiUrl: string): boolean {
     'UserByScreenName',
     'UserResultByScreenNameQuery',
     'UserResultByScreenName',
+    'AboutAccountQuery'
   ]
 
   if (apiUrl.includes('graphql')) {
