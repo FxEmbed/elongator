@@ -44,7 +44,7 @@ export async function handleXMigration(fetchNewHomePage = false): Promise<Cheeri
   const homeUrl = 'https://x.com/home';
   let resp = await cachedFetch(homeUrl, {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
     }
   }, fetchNewHomePage);
   let html = await resp.text();
@@ -93,8 +93,9 @@ export async function handleXMigration(fetchNewHomePage = false): Promise<Cheeri
   return $;
 }
 
-// Regex to extract on-demand file hash and key byte indices
-const ON_DEMAND_FILE_REGEX = /['"]ondemand\.s['"]:\s*['"]([\w]+)['"]/;
+// Regex to extract on-demand bundle index, then hex filename (matches x.com main bundle layout)
+const ON_DEMAND_FILE_REGEX = /,(\d+):["']ondemand\.s["']/;
+const ON_DEMAND_HASH_PATTERN = (index: string) => new RegExp(`,${index}:"([0-9a-f]+)"`);
 const INDICES_REGEX = /\(\w\[(\d{1,2})\],\s*16\)/g;
 
 export class ClientTransaction {
@@ -143,12 +144,15 @@ export class ClientTransaction {
   /** Fetch and parse the ondemand JS to get key byte indices */
   private async getIndices(): Promise<[number, number[]]> {
     const html = this.homePage.html() || '';
-    const m = ON_DEMAND_FILE_REGEX.exec(html);
-    const fallbackHash = 'de6339a'
-    if (!m || !m[1]) {
-      console.error("Couldn't get on-demand file hash");
+    const indexMatch = ON_DEMAND_FILE_REGEX.exec(html);
+    if (!indexMatch?.[1]) {
+      throw new Error("Couldn't get on-demand file index");
     }
-    const hash = m?.[1] ?? fallbackHash;
+    const hashMatch = ON_DEMAND_HASH_PATTERN(indexMatch[1]).exec(html);
+    if (!hashMatch?.[1]) {
+      throw new Error("Couldn't get on-demand file hash");
+    }
+    const hash = hashMatch[1];
     const url = `https://abs.twimg.com/responsive-web/client-web/ondemand.s.${hash}a.js`;
     const resp = await cachedFetch(url);
     const text = await resp.text();

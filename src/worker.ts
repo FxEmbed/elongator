@@ -179,6 +179,10 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
         } else if (json?.errors?.[0]?.message.includes('Query: Unspecified')) {
           console.log('Downstream fetch problem (Query: Unspecified). Ignore this as this is usually not an issue.');
           errors = false;
+        } else if (json?.errors?.[0]?.message.includes('value out of range')) {
+          console.log('Invalid status ID, ingoring error (strconv.ParseInt: value out of range.)');
+          errors = false;
+          return new Response('Status not found', { status: 404 })
         }
       }
       if (env.EXCEPTION_DISCORD_WEBHOOK && errors) {
@@ -280,7 +284,13 @@ function isAllowlisted(apiUrl: string): boolean {
     'UserByScreenName',
     'UserResultByScreenNameQuery',
     'UserResultByScreenName',
-    'AboutAccountQuery'
+    'AboutAccountQuery',
+    'SearchTimeline',
+    'ExplorePage',
+    'GenericTimelineById',
+    'UserTweets',
+    'ProfileTimeline',
+    'ConversationTimeline'
   ]
 
   if (apiUrl.includes('graphql')) {
@@ -297,7 +307,8 @@ function isAllowlisted(apiUrl: string): boolean {
 function needsTransactionId(apiUrl: string): boolean {
   const url = new URL(apiUrl)
   const queries: string[] = [
-    'TweetDetail'
+    'TweetDetail',
+    'SearchTimeline'
   ]
 
   if (apiUrl.includes('graphql')) {
