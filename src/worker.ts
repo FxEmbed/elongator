@@ -9,6 +9,7 @@ type CredentialList = {
 }
 
 import _credentials from '../credentials.json';
+import { filterObject } from './filter'
 import { ClientTransaction } from './transaction/transaction'
 const credentials: CredentialList = _credentials;
 const redactUsername = false;
@@ -229,7 +230,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
       }
 
 
-      if (typeof json.data === 'undefined' && typeof json.translation === 'undefined' && typeof json.source === 'undefined' && typeof json.result?.text === 'undefined') {
+      if (typeof json.data === 'undefined' && typeof json.translation === 'undefined' && typeof json.source === 'undefined' && typeof json.result?.text === 'undefined' && typeof json.num_results === 'undefined') {
         console.log(`No data was sent. Response code ${response.status}. Data sent`, rawBody ?? '[empty]');
         Object.keys(headers).forEach((key) => {
           // console.log(key, headers.get(key));
@@ -244,6 +245,10 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
     if (errors) {
       console.log(`Account is not working, trying another one...`);
     }
+    if (rawBody.includes(username)) {
+      console.log('Username is leaking, vaporizing object...')
+      decodedBody = JSON.stringify(filterObject(JSON.parse(decodedBody), username));
+    }
     // Workaround for tokenized translations
     if (apiUrl.includes('translation.json') || apiUrl.includes('live_video_stream')) {
       decodedBody = rawBody;
@@ -255,7 +260,7 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
       return new Response('Maximum failed attempts reached', { status: 502 })
     }
   } while (errors);
-
+  
   // Create a new Response object with the decoded body
   const decodedResponse = new Response(decodedBody, {
     status: response.status,
@@ -274,6 +279,7 @@ function isAllowlisted(apiUrl: string): boolean {
     '/i/api/1.1/strato/column/None/tweetId',
     '/1.1/live_video_stream/status/',
     '/2/grok/translation.json',
+    '/1.1/search/typeahead.json',
   ]
   const allowlistQuery: string[] = [
     'TweetResultByRestId',
