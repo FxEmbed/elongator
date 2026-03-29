@@ -103,8 +103,6 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
 
     // console.log('response', rawBody);
 
-    const statusId = request.url.match(/(?<=focalTweetId%22%3A%22)\d+(?=%)|(?<=tweetId=)\d+(?=,)/g)?.[0] ?? request.url;
-
     // Print out x-rate-limit-remaining
     const rateLimitRemaining = response.headers.get('x-rate-limit-remaining') ?? 'N/A';
     console.log(`Rate limit remaining for account: ${rateLimitRemaining}`)
@@ -117,9 +115,6 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
       attempts++;
       console.log('---------------------------------------------')
       console.log(`Attempt #${attempts} with account ${redactUsername ? '[REDACTED]' : username}`);
-      if (statusId.length < 20) {
-        console.log(`Fetching status ID: ${statusId}`);
-      }
       json = JSON.parse(decodedBody);
       if (json.errors || decodedBody.includes(`"reason":"NsfwViewerIsUnderage"`)) {
         console.log(json.errors);
@@ -186,13 +181,20 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
           return new Response('Status not found', { status: 404 })
         }
       }
+
+      let variables = url.searchParams.get('variables') ?? '';
+      try {
+        variables = JSON.stringify(JSON.parse(variables), null, 2);
+      } catch (e) {
+        variables = url.search;
+      }
+
       if (env.EXCEPTION_DISCORD_WEBHOOK && errors) {
         console.log('Sending Discord webhook');
         const body: any = JSON.stringify({
           content: `@everyone`,
           embeds: [{
-            title: "Elongator Account Error",
-            description: "If this account is locked, please unlock it ASAP",
+            title: "Request Failed",
             color: 0xFF0000, // Red color
             fields: [
               {
@@ -201,19 +203,19 @@ async function handleRequest(request: Request, env: any, ctx: ExecutionContext):
                 inline: true
               },
               {
-                name: "Errors",
-                value: "```json\n" + JSON.stringify(json.errors, null, 2) + "\n```",
-                inline: false
-              },
-              {
                 name: 'Endpoint',
                 value: (requestPath ?? '').match(/\w+$/g)?.[0] ?? 'idk',
                 inline: true
               },
               {
-                name: "Status",
-                value: statusId.length > 20 ? '[REDACTED]' : statusId,
-                inline: true
+                name: "Errors",
+                value: "```json\n" + JSON.stringify(json.errors, null, 2) + "\n```",
+                inline: false
+              },
+              {
+                name: "Variables",
+                value: '```json\n' + variables +'\n```',
+                inline: false
               }
             ]
           }]
@@ -288,8 +290,10 @@ function isAllowlisted(apiUrl: string): boolean {
     'TweetResultsByIdsQuery',
     'TweetDetail',
     'UserByScreenName',
+    'UserByRestId',
     'UserResultByScreenNameQuery',
     'UserResultByScreenName',
+    'UserResultByRestId',
     'AboutAccountQuery',
     'SearchTimeline',
     'ExplorePage',
