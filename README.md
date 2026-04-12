@@ -1,3 +1,5 @@
+# Deprecated: Account proxying is now built into the main [FxEmbed](https://github.com/FxEmbed/FxEmbed) worker
+
 # FxTwitter Elongator
 
 Elongator is an internal proxying service used to circumvent X/Twitter's heavy restrictions disallowing access to bulk Tweets from the guest API. FxTwitter relies on the guest API to provide unauthenticated access to Tweets, so in instances where Twitter excludes Tweets from the guest API, FxTwitter will be able to access them through elongator.
